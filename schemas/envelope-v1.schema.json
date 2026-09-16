@@ -1,0 +1,98 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://raw.githubusercontent.com/HarryHello/mnemo-bot/main/schemas/envelope-v1.schema.json",
+  "title": "MnemoBot Envelope v1",
+  "description": "MnemoBot ↔ mnemosync 协议 (设计文档 §4)。平台与协议分离 (§4.6): platform 为底层社交平台, protocol 为传输实现; 空间坐标以原始值传递, space_id 由 mnemosync 服务端统一组合。",
+  "oneOf": [
+    { "$ref": "#/definitions/batch_request" },
+    { "$ref": "#/definitions/trigger_envelope" }
+  ],
+  "definitions": {
+    "space": {
+      "type": "object",
+      "required": ["type", "id"],
+      "properties": {
+        "type": { "type": "string", "enum": ["group", "private"] },
+        "id": { "type": "string", "minLength": 1 }
+      }
+    },
+    "actor": {
+      "type": "object",
+      "required": ["external_key"],
+      "properties": {
+        "external_key": { "type": "string", "minLength": 1 },
+        "display_name": { "type": "string" }
+      }
+    },
+    "part": {
+      "description": "对齐 OpenAI content part; 未知类型仅要求 type (服务端占位降级)。",
+      "type": "object",
+      "required": ["type"],
+      "properties": {
+        "type": { "type": "string" },
+        "text": { "type": "string" },
+        "image_url": {
+          "type": "object",
+          "required": ["url"],
+          "properties": { "url": { "type": "string", "minLength": 1 } }
+        }
+      }
+    },
+    "meta": {
+      "type": "object",
+      "properties": {
+        "is_bot": { "type": "boolean" },
+        "correlation_id": { "type": "string" }
+      }
+    },
+    "event": {
+      "type": "object",
+      "required": ["id", "ts", "content"],
+      "properties": {
+        "id": { "type": "string", "minLength": 1, "description": "外部事件 ID, 幂等键" },
+        "ts": {
+          "description": "平台时间: epoch 毫秒 或 带显式 offset 的 ISO 8601 (naive 拒收)",
+          "oneOf": [
+            { "type": "integer", "minimum": 0 },
+            { "type": "string", "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d+)?([+-]\\d{2}:\\d{2}|Z)$" }
+          ]
+        },
+        "kind": { "type": "string", "enum": ["message", "notice"] },
+        "actor": { "$ref": "#/definitions/actor" },
+        "content": { "type": "array", "items": { "$ref": "#/definitions/part" }, "minItems": 1 },
+        "reply_to": { "type": "string" },
+        "meta": { "$ref": "#/definitions/meta" }
+      }
+    },
+    "batch_request": {
+      "type": "object",
+      "required": ["version", "protocol", "platform", "space", "events"],
+      "properties": {
+        "version": { "const": 1 },
+        "protocol": { "type": "string", "minLength": 1 },
+        "platform": { "type": "string", "minLength": 1 },
+        "space": { "$ref": "#/definitions/space" },
+        "events": { "type": "array", "items": { "$ref": "#/definitions/event" } }
+      }
+    },
+    "trigger_envelope": {
+      "type": "object",
+      "required": ["version", "protocol", "platform", "space", "event", "origin"],
+      "properties": {
+        "version": { "const": 1 },
+        "protocol": { "type": "string", "minLength": 1 },
+        "platform": { "type": "string", "minLength": 1 },
+        "space": { "$ref": "#/definitions/space" },
+        "event": { "$ref": "#/definitions/event" },
+        "origin": { "type": "string", "enum": ["user", "persona_proactive"] },
+        "quoted": {
+          "type": "object",
+          "properties": {
+            "speaker": { "type": "string" },
+            "text": { "type": "string" }
+          }
+        }
+      }
+    }
+  }
+}

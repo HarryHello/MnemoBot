@@ -1,0 +1,15 @@
+{
+  "id": "987655",
+  "ts": 1737091285000,
+  "kind": "message",
+  "actor": {
+    "external_key": "10002",
+    "display_name": "小红"
+  },
+  "content": [
+    { "type": "text", "text": "看这张图" },
+    { "type": "image_url", "image_url": { "url": "https://gchat.qpic.cn/example.jpg" } }
+  ],
+  "reply_to": "987654",
+  "meta": { "correlation_id": "1122334455667788" }
+}

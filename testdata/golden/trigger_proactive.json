@@ -1,0 +1,15 @@
+{
+  "version": 1,
+  "protocol": "onebot11",
+  "platform": "qq",
+  "space": { "type": "group", "id": "123456" },
+  "event": {
+    "id": "proactive-a1b2c3d4e5f60708",
+    "ts": 1737094882000,
+    "kind": "message",
+    "content": [
+      { "type": "text", "text": "（内部触发，非用户消息）已经安静了一段时间，请以 persona 的口吻自然地主动开启一个话题。" }
+    ]
+  },
+  "origin": "persona_proactive"
+}

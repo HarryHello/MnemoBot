@@ -1,0 +1,33 @@
+# mnemo-bot 配置模板 — 复制为 config.local.toml 后填写
+# 完整字段说明见 docs/design.md §5.8
+
+[mnemosync]
+base_url  = "http://127.0.0.1:16125"
+api_key   = "sk-..."
+min_version = "0.4.1"        # envelope v1 + events 端点所需的最低 mnemosync 版本
+model     = "mnemosync"      # /v1 请求的 model 字段 (mnemosync 按 API Key 角色绑定路由)
+timeout_seconds = 120        # 触发调用 (LLM) 超时
+
+[onebot]
+mode         = "reverse"     # 一期仅支持 reverse (napcat 连入, §5.1)
+listen       = ":16530"      # napcat 反向 WS 连入地址 (ws://<host>:16530)
+access_token = "change-me"
+self_id      = "10000"       # bot 自身 QQ 号 — 自回声过滤依据
+platform     = "qq"          # 底层社交平台标识 (OneBot v12 原生提供; v11 由配置声明)
+base64_media_fallback = false # 图片无 URL 时是否读本地文件转 base64 (napcat 同机时可用)
+
+[persona]
+nicknames = ["小忆"]          # 触发判定: 名字提及检测 (一期本地配置, 二期改从服务端读)
+
+[triage]
+private_always   = true      # 私聊总是回复
+group_cooldown_seconds = 30  # 群聊触发冷却 (秒)
+proactive_silence_minutes = 120   # 主动消息静默阈值 (分钟); 0 = 禁用
+proactive_prompt = "（内部触发，非用户消息）已经安静了一段时间，请以 persona 的口吻自然地主动开启一个话题。"
+
+[deliver]
+max_text_chars = 2000        # 单条 QQ 消息最大字符数, 超长自动拆分
+send_delay_ms  = 200         # 拆分条目间的发送间隔 (防风控)
+
+# 空间命名由服务端组合 (§4.6): envelope 只上报原始坐标 space: {type, id},
+# bot 侧没有 [spaces] 配置。

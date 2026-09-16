@@ -246,30 +246,38 @@ OneBot WS ⇄ [adapter: 协议翻译/自回声过滤] ⇄ [记录管线] → 批
 - `mnemo-bot check`：自检——mnemosync 版本 ≥ 最低要求、events 端点存在、auth 有效、envelope 版本匹配；插件缺失/不符的诊断指引。
 - 配置 TOML（对齐父项目风格，不做热重载）：
 
-  ```toml
-  [mnemosync]
-  base_url = "http://127.0.0.1:16125"
-  api_key  = "sk-…"
-  min_version = "0.4.…"        # envelope v1 + events 端点的最低版本
+```toml
+[mnemosync]
+base_url = "http://127.0.0.1:16125"
+api_key  = "sk-…"
+min_version = "0.4.…"        # envelope v1 + events 端点的最低版本
+model    = "mnemosync"       # /v1 请求的 model 字段 (mnemosync 按 API Key 角色绑定路由)
+timeout_seconds = 120        # 触发调用 (LLM) 超时
 
-  [onebot]
-  mode       = "reverse"       # napcat 连入
-  listen     = ":16530"
-  access_token = "…"
-  self_id    = "10000"         # 自回声过滤依据
+[onebot]
+mode       = "reverse"       # napcat 连入 (一期唯一模式, §5.1)
+listen     = ":16530"
+access_token = "…"
+self_id    = "10000"         # 自回声过滤依据
+platform   = "qq"            # 底层社交平台标识 (§4.6; v11 无此字段由配置声明)
+base64_media_fallback = false
 
-  [persona]
-  nicknames = ["…"]            # 一期本地配置，二期改从服务端读
+[persona]
+nicknames = ["…"]            # 一期本地配置，二期改从服务端读
 
-  [triage]
-  private_always   = true      # 私聊总是回复
-  group_cooldown_seconds = 30
-  proactive_silence_minutes = 120   # 0 = 禁用主动消息
+[triage]
+private_always   = true      # 私聊总是回复
+group_cooldown_seconds = 30
+proactive_silence_minutes = 120   # 0 = 禁用主动消息
+proactive_prompt = "…"       # 主动消息合成请求的指令文本
 
-  [spaces]
-  group_prefix   = "qq.group."
-  private_prefix = "qq.private."
-  ```
+[deliver]
+max_text_chars = 2000        # 单条 QQ 消息上限, 超长自动拆分
+send_delay_ms  = 200         # 拆分条目间隔 (防风控)
+
+# 空间命名由服务端组合 (§4.6): envelope 只上报原始坐标 space: {type, id},
+# bot 侧无 [spaces] 配置。
+```
 
 ## 6. mnemosync 侧加性改动（实施清单，全部对现有前端无行为差异）
 

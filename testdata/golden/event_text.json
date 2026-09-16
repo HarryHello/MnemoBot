@@ -1,0 +1,13 @@
+{
+  "id": "987654",
+  "ts": 1737091282000,
+  "kind": "message",
+  "actor": {
+    "external_key": "10001",
+    "display_name": "小明"
+  },
+  "content": [
+    { "type": "text", "text": "今天天气怎么样？" }
+  ],
+  "meta": { "correlation_id": "a1b2c3d4e5f60708" }
+}

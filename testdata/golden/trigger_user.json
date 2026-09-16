@@ -1,0 +1,23 @@
+{
+  "version": 1,
+  "protocol": "onebot11",
+  "platform": "qq",
+  "space": { "type": "group", "id": "123456" },
+  "event": {
+    "id": "987655",
+    "ts": 1737091285000,
+    "kind": "message",
+    "actor": { "external_key": "10002", "display_name": "小红" },
+    "content": [
+      { "type": "text", "text": "@bot 你刚才说的那句话什么意思？" },
+      { "type": "image_url", "image_url": { "url": "https://gchat.qpic.cn/example.jpg" } }
+    ],
+    "reply_to": "987654",
+    "meta": { "correlation_id": "1122334455667788" }
+  },
+  "origin": "user",
+  "quoted": {
+    "speaker": "小明",
+    "text": "今天天气怎么样？"
+  }
+}
