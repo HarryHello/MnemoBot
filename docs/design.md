@@ -185,6 +185,15 @@ OneBot WS ⇄ [adapter: 协议翻译/自回声过滤] ⇄ [记录管线] → 批
                               [journal(JSONL)] ← 全部出站请求与回执落本地日志
 ```
 
+**传输模式（已定）**：一期仅实现**反向 WS**——napcat 作为 WS 客户端连入 mnemo-bot 的监听端口（AstrBot 同款拓扑），事件下行与动作调用（`send_group_msg` / `get_msg` / `get_image`，带 `echo` 字段配对请求-响应）共用同一条连接，鉴权用 WS 握手的 `access_token`（napcat 侧配置）。选型理由：
+
+1. **重连归 napcat 管**：napcat 的反向连入重试是久经考验的现成行为，我们不必维护重连/退避逻辑（正向 WS 模式下客户端重连逻辑就是我们的负担）；
+2. **拓扑友好**：主流部署是 napcat 在本地/内网、mnemosync+bot 在远端服务器——反向 WS 下 napcat 侧**无需公网入站端口**，NAT/家宽环境零配置；
+3. **有状态方当服务端**：mnemo-bot 是持有 journal 与队列的一方，监听者角色与状态归属一致；
+4. 一期单账号（单 napcat 连入）；反向架构天然支持未来多 napcat 连入同一 bot 实例（按 `self_id` 路由），留后续版本。
+
+正向 WS 客户端与 HTTP POST 模式留 Phase 3——adapter 接口按"事件源 + 动作出口"抽象，新增传输变体成本低。
+
 ### 5.2 记录管线
 
 - 收到事件 → 自回声过滤 → journal 落盘 → 按空间批缓冲。
