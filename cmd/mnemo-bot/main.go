@@ -42,15 +42,17 @@ func usage() {
 	fmt.Fprint(os.Stderr, `mnemo-bot — mnemosync 第一方 bot 运行时 (设计文档: docs/design.md)
 
 用法:
-  mnemo-bot serve  [-config <path>]   运行 bot 运行时 (反向 WS + 触发管线)
-  mnemo-bot check  [-config <path>]   自检 mnemosync 版本/鉴权/events 端点
-  mnemo-bot version                  打印版本
+  mnemo-bot serve  [-config <path>] [--mock]   运行 bot 运行时
+                                              --mock: 内置 mock 上游, 不连真实 mnemosync, 用于接口自测
+  mnemo-bot check  [-config <path>]            自检 mnemosync 版本/鉴权/events 端点
+  mnemo-bot version                            打印版本
 `)
 }
 
 func serve(args []string) {
 	fs := flag.NewFlagSet("serve", flag.ExitOnError)
 	cfgFlag := fs.String("config", "", "配置文件路径 (默认自动查找 config.local.toml / config.toml)")
+	mock := fs.Bool("mock", false, "自测模式: 内置 mock 上游, 不连接真实 mnemosync")
 	_ = fs.Parse(args)
 
 	log := slog.New(slog.NewTextHandler(os.Stderr, nil))
@@ -58,6 +60,9 @@ func serve(args []string) {
 	if err != nil {
 		log.Error("配置加载失败", "err", err)
 		os.Exit(1)
+	}
+	if *mock {
+		cfg.Mnemosync.Mock = true
 	}
 
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)

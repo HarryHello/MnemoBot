@@ -29,6 +29,7 @@ mnemosync 保持纯服务商契约（请求→响应，无出站主动性），�
 - **主动消息**：bot 侧调度 + `origin=persona_proactive` 合成请求，服务端只落 persona 的回复，不污染对话流水。
 - **可靠性**：本地日志（journal）先于入队落盘，断线重连按事件 ID 幂等补投，零丢失零重复。
 - **`mnemo-bot check`**：一条命令自检 mnemosync 版本、events 端点、鉴权与协议版本匹配。
+- **接口自测模式**：`mnemo-bot serve --mock` 不连接 mnemosync，由内置 mock 上游承接批量落库与触发请求，并把信封解析结果回显成回复——配合 NapCat 可单独端到端验证 bot 侧全部接口（违纪的 flush 纪律会以 ❌ 标出）。
 
 ## 路线图
 

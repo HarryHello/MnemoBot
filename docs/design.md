@@ -242,7 +242,7 @@ OneBot WS ⇄ [adapter: 协议翻译/自回声过滤] ⇄ [记录管线] → 批
 
 ### 5.8 CLI 与配置
 
-- `mnemo-bot serve`：运行。
+- `mnemo-bot serve [--mock]`：运行；`--mock` 进入自测模式——内置 mock 上游承接 events/chat 请求（全部接受 + 信封字段回显 + flush 纪律校验），用于不部署 mnemosync 时端到端自测 bot 接口（纪律违纪以 ❌ 标注在 mock 回复里）。
 - `mnemo-bot check`：自检——mnemosync 版本 ≥ 最低要求、events 端点存在、auth 有效、envelope 版本匹配；插件缺失/不符的诊断指引。
 - 配置 TOML（对齐父项目风格，不做热重载）：
 

@@ -161,6 +161,17 @@ func (t *TriggerEnvelope) Block() (string, error) {
 	return EnvelopeBlockOpen + string(data) + EnvelopeBlockClose, nil
 }
 
+// ActorName 触发事件来源的显示名 (诊断回显用).
+func (t *TriggerEnvelope) ActorName() string {
+	if t.Event.Actor == nil {
+		return "未知"
+	}
+	if t.Event.Actor.DisplayName != "" {
+		return t.Event.Actor.DisplayName
+	}
+	return t.Event.Actor.ExternalKey
+}
+
 // NewCorrelationID 生成随机关联标识, 贯穿 bot→mnemosync 的日志链路.
 func NewCorrelationID() string {
 	var b [8]byte

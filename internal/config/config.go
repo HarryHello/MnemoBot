@@ -27,6 +27,9 @@ type Mnemosync struct {
 	MinVersion string `toml:"min_version"`
 	Model      string `toml:"model"`
 	TimeoutSec int    `toml:"timeout_seconds"`
+	// Mock 仅由 serve --mock 置位 (不入 TOML): 启动内置 mock 上游,
+	// 不连接真实 mnemosync, 用于 bot 接口端到端自测.
+	Mock bool `toml:"-"`
 }
 
 // Onebot OneBot v11 反向 WS 接入配置.

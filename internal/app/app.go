@@ -56,8 +56,17 @@ func Run(ctx context.Context, cfg *config.Config, log *slog.Logger) error {
 		return fmt.Errorf("打开 journal: %w", err)
 	}
 
+	baseURL := cfg.Mnemosync.BaseURL
+	if cfg.Mnemosync.Mock {
+		mock, err := startMockUpstream(log)
+		if err != nil {
+			return fmt.Errorf("启动 mock 上游: %w", err)
+		}
+		baseURL = mock.url
+	}
+
 	fw := forwarder.New(
-		cfg.Mnemosync.BaseURL, cfg.Mnemosync.APIKey, cfg.Mnemosync.Model,
+		baseURL, cfg.Mnemosync.APIKey, cfg.Mnemosync.Model,
 		envelope.ProtocolOneBot11, cfg.Onebot.Platform,
 		time.Duration(cfg.Mnemosync.TimeoutSec)*time.Second,
 		jr, log,
