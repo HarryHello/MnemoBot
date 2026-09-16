@@ -102,6 +102,7 @@ func (t *Triage) DueSpaces(now time.Time) []string {
 }
 
 // Evaluate 触发判定; 触发时同时刷新冷却计时.
+// 被冷却抑制的信号返回 Reason="冷却中" (供调用方观测), 无信号返回空 Decision.
 func (t *Triage) Evaluate(spaceKey string, sig Signal, now time.Time) Decision {
 	t.mu.Lock()
 	defer t.mu.Unlock()
@@ -110,29 +111,35 @@ func (t *Triage) Evaluate(spaceKey string, sig Signal, now time.Time) Decision {
 		if t.privateAlways {
 			return t.trigger(spaceKey, now, "私聊")
 		}
-		return Decision{}
+		return Decision{Reason: "私聊已禁用"}
 	}
 	if sig.PokeSelf {
 		if t.cool(spaceKey, now) {
 			return t.trigger(spaceKey, now, "戳一戳")
 		}
-		return Decision{}
+		return Decision{Reason: "冷却中"}
 	}
 	if sig.AtSelf {
 		if t.cool(spaceKey, now) {
 			return t.trigger(spaceKey, now, "@我")
 		}
-		return Decision{}
+		return Decision{Reason: "冷却中"}
 	}
 	if sig.ReplyTo != "" {
-		if _, ok := t.sentIDs[sig.ReplyTo]; ok && t.cool(spaceKey, now) {
-			return t.trigger(spaceKey, now, "回复我")
+		if _, ok := t.sentIDs[sig.ReplyTo]; ok {
+			if t.cool(spaceKey, now) {
+				return t.trigger(spaceKey, now, "回复我")
+			}
+			return Decision{Reason: "冷却中"}
 		}
 	}
 	text := strings.ToLower(sig.Text)
 	for _, nick := range t.nicknames {
-		if nick != "" && strings.Contains(text, nick) && t.cool(spaceKey, now) {
-			return t.trigger(spaceKey, now, "名字提及")
+		if nick != "" && strings.Contains(text, nick) {
+			if t.cool(spaceKey, now) {
+				return t.trigger(spaceKey, now, "名字提及")
+			}
+			return Decision{Reason: "冷却中"}
 		}
 	}
 	return Decision{}

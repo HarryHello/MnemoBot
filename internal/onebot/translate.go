@@ -199,11 +199,19 @@ func (t *Translator) TranslateNotice(raw json.RawMessage) (ev *envelope.Event, s
 	}
 	var text string
 	switch {
-	case n.NoticeType == "notify" && n.SubType == "poke":
-		if t.selfEcho(n.TargetID) {
+	case n.NoticeType == "notify" && (n.SubType == "poke" || n.SubType == "group_poke"):
+		// 不同实现/版本的戳一戳事件 user_id / target_id 语义存在差异 (有的
+		// 以 user_id 为发起者, 有的报告顺序相反), 两侧都比对 self 才可靠.
+		// (beta 实测: 单侧判定会漏掉字段语义相反的实现 — 单戳无反应、
+		// 连戳才触发就是此问题的表现)
+		switch {
+		case t.selfEcho(n.TargetID):
 			text = "[戳一戳] 用户" + fmtID(n.UserID) + " 戳了戳我"
 			pokeSelf = true
-		} else {
+		case t.selfEcho(n.UserID):
+			text = "[戳一戳] 用户" + fmtID(n.TargetID) + " 戳了戳我 (字段语义存疑)"
+			pokeSelf = true
+		default:
 			text = "[戳一戳] 用户" + fmtID(n.UserID) + " 戳了戳用户" + fmtID(n.TargetID)
 		}
 	case n.NoticeType == "group_increase":

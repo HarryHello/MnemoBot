@@ -178,6 +178,9 @@ func (p *Pipeline) maybeTrigger(space envelope.Space, ev envelope.Event, sig tri
 	key := p.spaceKey(space)
 	dec := p.tr.Evaluate(key, sig, time.Now())
 	if !dec.Trigger {
+		if dec.Reason != "" {
+			p.log.Info("触发信号被抑制", "space", key, "reason", dec.Reason)
+		}
 		return
 	}
 	if !p.markBusy(key) {

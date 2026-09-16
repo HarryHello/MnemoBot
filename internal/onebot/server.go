@@ -179,10 +179,23 @@ func (s *Server) dispatch(data []byte) {
 			s.handler.PrivateMessage(ctx, tr)
 		}
 	case "notice":
-		ev, space, pokeSelf, ok := s.tr.TranslateNotice(data)
-		if ok {
-			s.handler.Notice(ctx, ev, space, pokeSelf)
+		var noticeMeta struct {
+			NoticeType string `json:"notice_type"`
+			SubType    string `json:"sub_type"`
+			GroupID    int64  `json:"group_id"`
+			UserID     int64  `json:"user_id"`
+			TargetID   int64  `json:"target_id"`
 		}
+		_ = json.Unmarshal(data, &noticeMeta)
+		s.log.Info("notice 事件", "notice_type", noticeMeta.NoticeType, "sub_type", noticeMeta.SubType,
+			"group_id", noticeMeta.GroupID, "user_id", noticeMeta.UserID, "target_id", noticeMeta.TargetID)
+		ev, space, pokeSelf, ok := s.tr.TranslateNotice(data)
+		if !ok {
+			s.log.Warn("未识别的 notice 事件 (不落库, 不触发)",
+				"notice_type", noticeMeta.NoticeType, "sub_type", noticeMeta.SubType)
+			return
+		}
+		s.handler.Notice(ctx, ev, space, pokeSelf)
 	case "request":
 		// 好友/加群请求 — 一期不处理
 	default:
