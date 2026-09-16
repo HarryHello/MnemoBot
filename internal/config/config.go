@@ -136,11 +136,14 @@ func (c *Config) applyDefaults() {
 }
 
 func (c *Config) validate() error {
-	if c.Mnemosync.BaseURL == "" {
-		return errors.New("[mnemosync] base_url 未配置")
-	}
-	if c.Mnemosync.APIKey == "" {
-		return errors.New("[mnemosync] api_key 未配置")
+	// mock 自测模式不连真实 mnemosync, 上游连接参数豁免校验
+	if !c.Mnemosync.Mock {
+		if c.Mnemosync.BaseURL == "" {
+			return errors.New("[mnemosync] base_url 未配置")
+		}
+		if c.Mnemosync.APIKey == "" {
+			return errors.New("[mnemosync] api_key 未配置")
+		}
 	}
 	if c.Onebot.Mode != "reverse" {
 		return fmt.Errorf("[onebot] mode=%q: 一期仅支持 reverse", c.Onebot.Mode)
