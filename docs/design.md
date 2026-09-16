@@ -118,9 +118,9 @@ POST /v1/conversation/events
 Authorization: Bearer <api_key>
 {
   "version": 1,
-  "platform": "onebot11",
-  "space_id": "qq.group.123456",
-  "channel_type": "group",
+  "protocol": "onebot11",
+  "platform": "qq",
+  "space": {"type": "group", "id": "123456"},
   "events": [ <事件对象>, … ]
 }
 → 200 { "results": [ {"index": 0, "status": "accepted"},
@@ -138,7 +138,8 @@ Authorization: Bearer <api_key>
 - envelope 以结构化块嵌入最后一条 user 消息（一期进消息体；header 通道为三期预留）：
 
   ```
-  <mnemo-envelope>{"version":1, "platform":"onebot11", "space_id":"…",
+  <mnemo-envelope>{"version":1, "protocol":"onebot11", "platform":"qq",
+                   "space":{"type":"group","id":"123456"},
                    "event": <事件对象>, "origin":"user"}</mnemo-envelope>
   实际消息文本……
   ```
@@ -156,6 +157,21 @@ Authorization: Bearer <api_key>
 - 记录路径：`id` → `external_event_id` → 事件指纹 → `conversation_turns` UNIQUE 索引去重（现有机制）。重发/补投零成本。
 - 触发路径：复用现有 idempotency.db 幂等重放。
 - **自回声过滤（唯一硬过滤，且是去重不是排除）**：adapter 过滤 `user_id == self_id` 的事件——persona 回复在 `/v1` 时已落库一次，OneBot 回吐的 echo 不得二次落库。
+
+### 4.6 命名空间：平台与协议分离（已定）
+
+身份与空间命名把两个维度严格分开：
+
+| 维度 | 含义 | 取值示例 |
+|---|---|---|
+| `platform` | 底层社交平台 | `qq` / `telegram` / `discord`…（OneBot v12 的 `self.platform` 原生提供；v11 无此字段，由 adapter 配置声明，默认 `qq`） |
+| `protocol` | 传输实现 | `onebot11` / `onebot12` / 未来非 OneBot 的原生协议 |
+
+**Actor**：单一 frontend `mnemobot` 命名空间，external_key 复合平台前缀 = `{platform}:{平台原生ID}`（如 `qq:10001`、`telegram:5432`）。**协议不参与身份**：OneBot v11↔v12 切换、未来非 OneBot 协议接入同一平台，命中同一 Actor；同平台多协议实例并存也不分裂。
+
+**空间**：envelope 只报原始坐标 `space: {type, id}`（group/private + 平台原生频道/会话 ID）；mnemosync 服务端统一组合 `space_id = "{platform}.{type}.{id}"`（如 `qq.group.123456`）。组合规则单一出处（服务端 envelope 归一模块，身份插件与 events 端点共用），未来调整命名或迁移只动一处。
+
+**与 astrbot 路径共存**：同一 QQ 号 → astrbot Actor（frontend="astrbot"）与 mnemobot Actor 并存，用既有 UserGroup 绑定机制归并；空间短期分立（astrbot 用群名、MnemoBot 用数字 ID），长期记忆跟受众走，短期流水在新空间重新积累。
 
 ## 5. MnemoBot 运行时设计
 
@@ -248,7 +264,7 @@ OneBot WS ⇄ [adapter: 协议翻译/自回声过滤] ⇄ [记录管线] → 批
 
 ## 6. mnemosync 侧加性改动（实施清单，全部对现有前端无行为差异）
 
-1. **`mnemosync_bot` 身份插件**：解析 `<mnemo-envelope>` 块（pydantic 结构化解析，不做正则猜名），结构体与 bot 侧对同一 JSON Schema 实现；走 `mnemosync-plugins` 分发仓库。
+1. **`mnemobot` 身份插件**：解析 `<mnemo-envelope>` 块（pydantic 结构化解析，不做正则猜名），负责 §4.6 的身份与空间组合（平台前缀复合键、`space_id` 组合），结构体与 bot 侧对同一 JSON Schema 实现；走 `mnemosync-plugins` 分发仓库。
 2. **`POST /v1/conversation/events`**：§4.2 契约；复用 `_conversation_events()` + `append_events()`；space lock 沿用。
 3. **origin 语义**：forward 管线对 `persona_proactive` 请求不落 user turn、回复按 assistant 落库、不触发 user 向的记忆/关系分析。
 4. **记录时异步视觉描述**：events 端点收到 media part 后调度现有 vision agent（role binding `vision`，回退 `assist`），描述文本物化进流水；失败落 `[图片]`；**per-space 成本开关（默认开）**；模式与 memory_graph 异步记忆图同构。
@@ -295,10 +311,9 @@ OneBot WS ⇄ [adapter: 协议翻译/自回声过滤] ⇄ [记录管线] → 批
 
 ## 10. 开放问题（留待实施或二期）
 
-1. **Actor 命名空间**：`platform = "qq"`（与 astrbot 插件的 QQ 号 Actor 汇合）还是独立 `"onebot11"` 命名空间再靠 UserGroup 绑定归并——影响同一 QQ 号在两条路径下是否分裂成两个 Actor，须在插件实现前定。
-2. **空间命名与 astrbot 路径分立**：astrbot 用群名做 space_id，MnemoBot 用稳定数字 ID（`qq.group.{group_id}`）——两条路径的同一群落不同空间，短期接受分立，归并留给 UserGroup 机制。
-3. notice 事件（戳一戳等）的 envelope 表达细节（占位文本模板）。
-4. 流式回复（一期非流式，留位观察）。
-5. `is_bot` meta 的消费方（未来装填策略/分析）。
-6. events 端点响应是否回显 envelope 版本（§6.5）。
-7. `mnemo-bot check` 对"插件缺失"的主动诊断方法（当前只能给出被动症状指引）。
+1. **astrbot 路径共存与空间分立**：Actor 归并靠既有 UserGroup 绑定（§4.6）；空间短期分立（astrbot 群名 vs MnemoBot 数字 ID），是否做空间别名/合并机制留观察。
+2. notice 事件（戳一戳等）的 envelope 表达细节（占位文本模板）。
+3. 流式回复（一期非流式，留位观察）。
+4. `is_bot` meta 的消费方（未来装填策略/分析）。
+5. events 端点响应是否回显 envelope 版本（§6.5）。
+6. `mnemo-bot check` 对"插件缺失"的主动诊断方法（当前只能给出被动症状指引）。

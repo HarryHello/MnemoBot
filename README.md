@@ -36,12 +36,12 @@ mnemosync 保持纯服务商契约（请求→响应，无出站主动性），�
 2. **Phase 2**：`/internal/bot` 只读查询平面（关系/记忆，供更聪明的触发）、水位线长期记忆清扫
 3. **Phase 3**：OneBot v12 / 其他平台适配器、header 元数据通道
 
-配套 mnemosync 侧加性改动（`mnemosync_bot` 身份插件、批量事件端点、origin 语义、记录时视觉描述）见设计文档 §6。
+配套 mnemosync 侧加性改动（`mnemobot` 身份插件、批量事件端点、origin 语义、记录时视觉描述）见设计文档 §6。
 
 ## 相关仓库
 
 - [mnemosync](https://github.com/HarryHello/mnemosync) — 服务商本体（LangGraph 人格记忆同步代理服务器）
-- [mnemosync-plugins](https://github.com/HarryHello/mnemosync-plugins) — 身份插件分发渠道（`mnemosync_bot` 插件发布于此）
+- [mnemosync-plugins](https://github.com/HarryHello/mnemosync-plugins) — 身份插件分发渠道（`mnemobot` 插件发布于此）
 
 ## 协议
 
